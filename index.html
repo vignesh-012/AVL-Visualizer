@@ -1,152 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>AVL Dashboard Pro</title>
-    <style>
-        :root {
-            --bg-color: #0b0e14;
-            --side-panel: #141820;
-            --accent: #00d2ff;
-            --node-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-            --text: #e0e6ed;
-            --border: rgba(255, 255, 255, 0.08);
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Sidebar Design */
-        aside {
-            width: 300px;
-            background-color: var(--side-panel);
-            border-right: 1px solid var(--border);
-            padding: 40px 30px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.3);
-            z-index: 5;
-        }
-
-        .brand {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -1px;
-            margin-bottom: 50px;
-            background: var(--node-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .input-wrapper {
-            margin-bottom: 25px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #6a768a;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        input {
-            width: 100%;
-            box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            padding: 15px;
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        input:focus {
-            border-color: var(--accent);
-            background: rgba(255, 255, 255, 0.07);
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
-        }
-
-        .btn-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        button {
-            padding: 15px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-            border: none;
-        }
-
-        .btn-primary {
-            background: var(--node-gradient);
-            color: white;
-            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.6);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #ff4b2b;
-            color: #ff4b2b;
-        }
-
-        .btn-outline:hover {
-            background: #ff4b2b;
-            color: white;
-        }
-
-        /* Visualization Area */
-        main {
-            flex-grow: 1;
-            position: relative;
-            background: radial-gradient(circle at 50% 50%, #1c2331 0%, #0b0e14 100%);
-        }
-
-        canvas {
-            display: block;
-        }
-    </style>
-</head>
-<body>
-
-<aside>
-    <div class="brand">AVL.Visualizer</div>
-    
-    <div class="input-wrapper">
-        <label>Node Value</label>
-        <input type="number" id="nodeVal" placeholder="Enter integer..." autocomplete="off">
-    </div>
-
-    <div class="btn-stack">
-        <button class="btn-primary" onclick="handleAdd()">Insert Node</button>
-        <button class="btn-outline" onclick="handleReset()">Clear Tree</button>
-    </div>
-</aside>
-
-<main id="mainContainer">
-    <canvas id="treeCanvas"></canvas>
-</main>
+<div class="input-wrapper">
+    <label>Find Node</label>
+    <input type="number" id="searchVal" placeholder="Highlight value..." autocomplete="off" oninput="handleSearch()">
+</div>
 
 <script>
     class Node {
@@ -166,6 +21,7 @@
             let x = y.l; let t = x.r;
             x.r = y; y.l = t;
             y.h = Math.max(this.getH(y.l), this.getH(y.r)) + 1;
+            y.h = Math.max(this.getH(y.l), this.getH(y.r)) + 1; // Corrected height update
             x.h = Math.max(this.getH(x.l), this.getH(x.r)) + 1;
             return x;
         }
@@ -199,6 +55,7 @@
     const ctx = canvas.getContext('2d');
     const logic = new AVL();
     let root = null;
+    let highlightValue = null;
 
     function handleAdd() {
         const el = document.getElementById('nodeVal');
@@ -211,6 +68,15 @@
 
     function handleReset() {
         root = null;
+        highlightValue = null;
+        document.getElementById('searchVal').value = '';
+        render();
+    }
+
+    // New function to handle real-time searching
+    function handleSearch() {
+        const val = parseInt(document.getElementById('searchVal').value);
+        highlightValue = isNaN(val) ? null : val;
         render();
     }
 
@@ -230,21 +96,30 @@
             draw(n.r, x + sep, y + 90, sep / 1.9);
         }
 
-        // Draw Node
+        const isFound = n.v === highlightValue;
+        
+        // Dynamic styling for search highlight
         const g = ctx.createLinearGradient(x-20, y-20, x+20, y+20);
-        g.addColorStop(0, '#00d2ff');
-        g.addColorStop(1, '#3a7bd5');
+        if (isFound) {
+            g.addColorStop(0, '#ffd700'); // Gold
+            g.addColorStop(1, '#ffa500'); // Orange
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = 30;
+        } else {
+            g.addColorStop(0, '#00d2ff');
+            g.addColorStop(1, '#3a7bd5');
+            ctx.shadowColor = 'rgba(0, 210, 255, 0.3)';
+            ctx.shadowBlur = 20;
+        }
 
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = 'rgba(0, 210, 255, 0.3)';
         ctx.beginPath();
-        ctx.arc(x, y, 24, 0, 7);
+        ctx.arc(x, y, isFound ? 28 : 24, 0, Math.PI * 2);
         ctx.fillStyle = g;
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        ctx.fillStyle = "white";
-        ctx.font = "600 15px Inter, system-ui";
+        ctx.fillStyle = isFound ? "#000" : "white";
+        ctx.font = isFound ? "bold 16px Inter" : "600 15px Inter";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(n.v, x, y);
@@ -262,5 +137,3 @@
     window.addEventListener('resize', render);
     render();
 </script>
-</body>
-</html>
